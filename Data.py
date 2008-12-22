@@ -46,15 +46,15 @@ class Statistic(list):
     def __init__(self):
         super(Statistic, self).__init__()
         self.flawed_ = 0
-    
+
     def append(self, x, flawed=False):
         bisect.insort(self, x)
         if flawed:
             self.flawed_ += 1
-    
+
     def __cmp__(self, other):
         return cmp(self.median(), other.median())
-    
+
     def measurement(self):
         return trimmed_average(len(self), map(lambda x:(x, 1), self))
 
@@ -76,9 +76,20 @@ class Statistic(list):
 class MedianAggregate(Statistic):
     def step(self, val):
         self.append(val)
- 
+
     def finalize(self):
         return self.median()
+
+class FirstAggregate(object):
+    def __init__(self):
+        self.val = None
+
+    def step(self, val):
+        if self.val is not None:
+            self.val = val
+
+    def finalize(self):
+        return self.val
 
 
 class AmphDatabase(sqlite3.Connection):
@@ -90,6 +101,7 @@ class AmphDatabase(sqlite3.Connection):
         self.create_function("counter", 0, self.counter)
         self.create_function("regex_match", 1, self.match)
         self.create_aggregate("agg_median", 1, MedianAggregate)
+        self.create_aggregate("agg_first", 1, FirstAggregate)
         #self.create_aggregate("agg_trimavg", 2, TrimmedAverarge)
         self.create_function("ifelse", 3, lambda x, y, z: y if x is not None else z)
 
@@ -97,10 +109,10 @@ class AmphDatabase(sqlite3.Connection):
             self.fetchall("select * from result,source,statistic,text,mistake limit 1")
         except:
             self.newDB()
-    
+
     def setRegex(self, x):
         self.regex_ = re.compile(x)
-    
+
     def match(self, x):
         if self.regex_.search(x):
             return 1
@@ -111,7 +123,7 @@ class AmphDatabase(sqlite3.Connection):
         return self._count
     def resetCounter(self):
         self._count = -1
-    
+
     def newDB(self):
         self.executescript("""
 create table source (name text, disabled integer, discount integer);
@@ -133,7 +145,7 @@ create view text_source as
 
     def fetchall(self, *args):
         return self.execute(*args).fetchall()
-    
+
     def fetchone(self, sql, default, *args):
         x = self.execute(sql, *args)
         g = x.fetchone()

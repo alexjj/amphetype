@@ -50,7 +50,7 @@ class SourceModel(AmphModel):
 class TextManager(QWidget):
 
     defaultText = ("", 0, """Welcome to Amphetype!
-A typing program that not only measures your speed and progress, but also gives you detailed statistics on problem keys, words, common mistakes, and so on. This is just a default text since your database is empty. You will want to import some texts and excerpts will be generated for you. Some more advanced facilities to generate automatic lessons based you your statistics is coming! But for now, go to the "Sources" tab and try adding some texts from the "txt" directory.""")
+A typing program that not only measures your speed and progress, but also gives you detailed statistics about problem keys, words, common mistakes, and so on. This is just a default text since your database is empty. You might import a novel or text of your choosing and text excerpts will be generated for you automatically. There are also some facilities to generate lessons based on your past statistics! But for now, go to the "Sources" tab and try adding some texts from the "txt" directory.""")
 
 
     def __init__(self, *args):
