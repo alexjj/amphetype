@@ -100,6 +100,7 @@ class AmphDatabase(sqlite3.Connection):
         self.resetCounter()
         self.create_function("counter", 0, self.counter)
         self.create_function("regex_match", 1, self.match)
+        self.create_function("abbreviate", 2, self.abbreviate)
         self.create_aggregate("agg_median", 1, MedianAggregate)
         self.create_aggregate("agg_first", 1, FirstAggregate)
         #self.create_aggregate("agg_trimavg", 2, TrimmedAverarge)
@@ -112,6 +113,11 @@ class AmphDatabase(sqlite3.Connection):
 
     def setRegex(self, x):
         self.regex_ = re.compile(x)
+
+    def abbreviate(self, x, n):
+        if len(x) <= n:
+            return x
+        return x[:n-3] + "..."
 
     def match(self, x):
         if self.regex_.search(x):

@@ -9,11 +9,13 @@ from Data import DB
 from Config import *
 from QtUtil import *
 
+import Widgets.Plotters as Plotters
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#from matplotlib.figure import Figure
 
 
 
@@ -94,6 +96,9 @@ class PerformanceHistory(QWidget):
     def __init__(self, *args):
         super(PerformanceHistory, self).__init__(*args)
 
+        self.plotcol = 3
+        self.plot = Plotters.Plotter()
+
         self.editflag = False
         self.model = ResultModel()
 
@@ -106,19 +111,17 @@ class PerformanceHistory(QWidget):
         t.setRootIsDecorated(False)
         t.setIndentation(0)
         self.connect(t, SIGNAL("doubleClicked(QModelIndex)"), self.doubleClicked)
-
         self.connect(Settings, SIGNAL('change_graph_what'), self.updateGraph)
-
-        self.plotcol = 3
-        self.plot = AmphPlotter()
+        self.connect(Settings, SIGNAL('change_show_xaxis'), self.updateGraph)
 
         self.setLayout(AmphBoxLayout([
                 ["Show", SettingsEdit("perf_items"), "items for",
                     SettingsCombo('lesson_stats', ["both", "texts", "lessons"]), "limited to", self.cb_source,
                     "and group by", SettingsCombo('perf_group_by', ["single sessions", "10 sessions", "days"]),
-                    None], #, AmphButton("Update", self.updateData)],
+                    None, AmphButton("Update", self.updateData)],
                 (t, 1),
-                ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), (5, 'viscosity'))), None],
+                ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), (5, 'viscosity'))),
+                    SettingsCheckBox("show_xaxis", "Show X-axis"), None],
                 (self.plot, 1)
             ]))
 
@@ -129,12 +132,9 @@ class PerformanceHistory(QWidget):
     def updateGraph(self):
         pc = Settings.get('graph_what')
         y = map(lambda x:x[pc], self.model.rows)
-        l = len(y)
-
-        if l <= 1:
-            return
         y.reverse()
-        self.plot.go(y)
+
+        self.plot.setScene(Plotters.Plot(y))
 
     def refreshSources(self):
         self.editflag = True
@@ -142,7 +142,7 @@ class PerformanceHistory(QWidget):
         self.cb_source.addItem("<ALL>")
         self.cb_source.addItem("<LAST TEXT>")
 
-        for id, v in DB.fetchall('select rowid,name from source order by name'):
+        for id, v in DB.fetchall('select rowid,abbreviate(name,30) from source order by name'):
             self.cb_source.addItem(v, QVariant(id))
         self.editflag = False
 
@@ -208,16 +208,3 @@ class PerformanceHistory(QWidget):
 
         self.emit(SIGNAL("setText"), v)
         self.emit(SIGNAL("gotoText"))
-
-class AmphPlotter(FigureCanvas):
-    def __init__(self, *args):
-        fig = Figure()
-        super(AmphPlotter, self).__init__(fig, *args)
-        self.axes = fig.add_axes([0.05, .1, .9, .8])
-        self.axes.hold(False)
-
-    def go(self, y):
-        self.axes.plot(y)
-        self.axes.set_xticks([])
-        self.axes.grid(True)
-        self.draw()

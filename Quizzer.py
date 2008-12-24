@@ -29,12 +29,14 @@ class Typer(QTextEdit):
     def __init__(self, *args):
         super(Typer, self).__init__(*args)
 
+        self.setPalettes()
+
         self.connect(self, SIGNAL("textChanged()"), self.checkText)
-        self.palettes = {'wrong': QPalette(Qt.black), \
-            'right': QPalette(Qt.white),
-            'inactive': QPalette(Qt.black, Qt.lightGray, Qt.lightGray, Qt.darkGray, \
-                                 Qt.gray, Qt.black, Qt.lightGray)}
         #self.setLineWrapMode(QTextEdit.NoWrap)
+        self.connect(Settings, SIGNAL("change_quiz_wrong_fg"), self.setPalettes)
+        self.connect(Settings, SIGNAL("change_quiz_wrong_bg"), self.setPalettes)
+        self.connect(Settings, SIGNAL("change_quiz_right_fg"), self.setPalettes)
+        self.connect(Settings, SIGNAL("change_quiz_right_bg"), self.setPalettes)
         self.target = None
 
     def sizeHint(self):
@@ -44,6 +46,18 @@ class Typer(QTextEdit):
         if e.key() == Qt.Key_Escape:
             self.emit(SIGNAL("cancel"))
         return QTextEdit.keyPressEvent(self, e)
+
+    def setPalettes(self):
+        self.palettes = {
+            'wrong': QPalette(Qt.black,
+                Qt.lightGray, Qt.lightGray, Qt.darkGray, Qt.gray,
+                Settings.getColor("quiz_wrong_fg"), Qt.white, Settings.getColor("quiz_wrong_bg"), Qt.yellow),
+            'right': QPalette(Qt.black,
+                Qt.lightGray, Qt.lightGray, Qt.darkGray, Qt.gray,
+                Settings.getColor("quiz_right_fg"), Qt.yellow, Settings.getColor("quiz_right_bg"), Qt.yellow),
+            'inactive': QPalette(Qt.black, Qt.lightGray, Qt.lightGray, Qt.darkGray,
+                                 Qt.gray, Qt.black, Qt.lightGray)}
+        self.setPalette(self.palettes['inactive'])
 
     def setTarget(self,  text):
         self.editflag = True
@@ -135,22 +149,26 @@ class Quizzer(QWidget):
     def __init__(self, *args):
         super(Quizzer, self).__init__(*args)
 
+        self.result = QLabel()
         self.typer = Typer()
         self.label = WWLabel()
+        self.result.setVisible(Settings.get("show_last"))
         #self.label.setFrameStyle(QFrame.Raised | QFrame.StyledPanel)
         #self.typer.setBuddy(self.label)
         #self.info = QLabel()
         self.connect(self.typer,  SIGNAL("done"), self.done)
         self.connect(self.typer,  SIGNAL("cancel"), SIGNAL("wantText"))
         self.connect(Settings, SIGNAL("change_typer_font"), lambda x: self.readjust)
+        self.connect(Settings, SIGNAL("change_show_last"), self.result.setVisible)
 
         self.text = ('','', 0, None)
 
         layout = QVBoxLayout()
         #layout.addWidget(self.info)
         #layout.addSpacing(20)
-        layout.addWidget(self.label)
-        layout.addWidget(self.typer)
+        layout.addWidget(self.result, 0, Qt.AlignRight)
+        layout.addWidget(self.label, 1, Qt.AlignBottom)
+        layout.addWidget(self.typer, 1)
         self.setLayout(layout)
         self.readjust()
 
@@ -178,6 +196,11 @@ class Quizzer(QWidget):
 
         DB.execute('insert into result (w,text_id,source,wpm,accuracy,viscosity) values (?,?,?,?,?,?)',
                    (now, self.text[0], self.text[1], 12.0/spc, accuracy, viscosity))
+
+        v2 = DB.fetchone("""select agg_median(wpm),agg_median(acc) from
+            (select wpm,100.0*accuracy as acc from result order by w desc limit 10)""", (0.0, 100.0))
+        self.result.setText("Last: %.1fwpm (%.1f%%), last 10 average: %.1fwpm (%.1f%%)"
+            % ((12.0/spc, 100.0*accuracy) + v2))
 
         self.emit(SIGNAL("statsChanged"))
 

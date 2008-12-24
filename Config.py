@@ -24,6 +24,12 @@ class AmphSettings(QSettings):
             "num_rand": 50,
             "graph_what": 3,
             "req_space": True,
+            "show_last": True,
+            "show_xaxis": False,
+            "quiz_right_fg": "#000000",
+            "quiz_right_bg": "#ffffff",
+            "quiz_wrong_fg": "#ffffff",
+            "quiz_wrong_bg": "#000000",
 
             "ana_which": "wpm asc",
             "ana_what": 0,
@@ -50,8 +56,11 @@ class AmphSettings(QSettings):
 
     def getFont(self, k):
         qf = QFont()
-        qf.fromString(Settings.get(k))
+        qf.fromString(self.get(k))
         return qf
+
+    def getColor(self, k):
+        return QColor(self.get(k))
 
     def set(self, k, v):
         p = self.get(k)
@@ -64,6 +73,28 @@ class AmphSettings(QSettings):
 
 
 Settings = AmphSettings()
+
+
+class SettingsColor(AmphButton):
+    def __init__(self, key, text):
+        self.key_ = key
+        super(SettingsColor, self).__init__(Settings.get(key), self.pickColor)
+        self.updateIcon()
+
+    def pickColor(self):
+        color = QColorDialog.getColor(Settings.getColor(self.key_), self)
+        if not color.isValid():
+            return
+        Settings.set(self.key_, unicode(color.name()))
+        self.updateIcon()
+
+    def updateIcon(self):
+        pix = QPixmap(32, 32)
+        c = Settings.getColor(self.key_)
+        pix.fill(c)
+        self.setText(Settings.get(self.key_))
+        self.setIcon(QIcon(pix))
+
 
 
 class SettingsEdit(AmphEdit):
@@ -130,10 +161,18 @@ class PreferenceWidget(QWidget):
                 "and", SettingsEdit("max_chars"), "characters.", None],
             ["When selecting easy/difficult texts, scan a sample of",
                 SettingsEdit('num_rand'), "texts.", None],
-            [SettingsCheckBox('req_space', "Make SPACE mandatosy before each session."),
+            [SettingsCheckBox('req_space', "Make SPACE mandatory before each session."),
                 ("(Unchecking this and not starting texts by pressing space will reduce the accuracy (very slightly) of the measurements for the first key, word, and trigram of every text.)\n", 1)],
-            None,
-            "... more shit to come here"
+            [SettingsCheckBox('show_last', "Show last result(s) above text in the Typer.")],
+            [AmphGridLayout([
+                ["Typer Colors", "Text Color", "Background"],
+                ["Correct Input", SettingsColor('quiz_right_fg', "Foreground"),
+                        SettingsColor('quiz_right_bg', "Background")],
+                ["Wrong Input", SettingsColor('quiz_wrong_fg', "Foreground"),
+                        SettingsColor('quiz_wrong_bg', "Background")],
+                [1+1j,1+2j,2+1j,2+2j]
+            ]), None],
+            None
         ]))
 
         self.updateFont()

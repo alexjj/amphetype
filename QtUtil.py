@@ -29,7 +29,7 @@ class AmphModel(QAbstractItemModel):
         if len(idxs) +1 >= self.levels:
             return False
         return True
-    
+
     def index(self, row, column, parent):
         if row < 0 or column < 0 or row >= self.rowCount(parent) or column >= self.columnCount(parent):
             return QModelIndex()
@@ -41,19 +41,19 @@ class AmphModel(QAbstractItemModel):
     def parent(self, index):
         if not index.isValid():
             return QModelIndex()
-        
+
         idxs = index.internalPointer()
-        
+
         if len(idxs) == 0:
             return QModelIndex()
-        
+
         return self.createIndex(idxs[-1], 0, idxs[0:-1])
-    
+
     def indexList(self, index):
         if not index.isValid():
             return ()
         return index.internalPointer() + (index.row(), )
-    
+
     def findList(self, parent):
         if not parent.isValid():
             if self.rows is None:
@@ -66,20 +66,20 @@ class AmphModel(QAbstractItemModel):
         if len(r) <= self.cols+self.hidden:
             r.append(self.populateData(self.indexList(parent)))
         return r[self.cols+self.hidden]
-    
+
     def rowCount(self, index=QModelIndex()):
         tab = self.findList(index)
         return len(tab)
     def columnCount(self, index=QModelIndex()):
         return self.cols
-    
+
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
            return QVariant()
-        
+
         if role != Qt.DisplayRole and role != Qt.UserRole:
             return QVariant()
-        
+
         row, col = index.row(), index.column()
         tab = self.findList(index.parent())
 
@@ -114,10 +114,10 @@ class AmphModel(QAbstractItemModel):
         self.rows = self.populateData(())
         self.idxs = {}
         QAbstractItemModel.reset(self)
-    
+
     def populateData(self, idxs):
         pass
-    
+
     def signature(self):
         return ([], [])
 
@@ -138,7 +138,7 @@ class AmphTree(QTreeView):
 class AmphBoxLayout(QBoxLayout):
     def __init__(self, tree, dir=QBoxLayout.TopToBottom):
         QBoxLayout.__init__(self, dir)
-        
+
         for x in tree:
             if isinstance(x, tuple):
                 self.addStuff(*x)
@@ -199,6 +199,9 @@ class AmphGridLayout(QGridLayout):
             self.setRowStretch(pos[0], span[0])
         elif isinstance(x, (int, long)):
             pass
+        elif isinstance(x, complex):
+            self.setRowStretch(int(x.real), span[0])
+            self.setColumnStretch(int(x.imag), span[1])
         elif isinstance(x, QLayout):
             self.addLayout(x, *args)
         else:
@@ -209,8 +212,8 @@ class AmphGridLayout(QGridLayout):
 
 
 class AmphButton(QPushButton):
-    def __init__(self, text, callback):
-        super(AmphButton, self).__init__(text)
+    def __init__(self, text, callback, *args):
+        super(AmphButton, self).__init__(text, *args)
         self.connect(self, SIGNAL("clicked()"), callback)
 
 class AmphEdit(QLineEdit):
