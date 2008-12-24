@@ -126,7 +126,6 @@ class Typer(QTextEdit):
             t = self.times[1:]
             t.sort(reverse=True)
             v = DB.fetchone('select time from statistic where type = 0 and data = ? order by rowid desc limit 1', (t[len(t)//5], ), (self.target[0], ))
-            print "v=",v,"80=",t[len(t)//5],"all=",t
             self.times[0] = v[0]
             self.when[0] = self.when[1] - self.times[0]
             print "interpolated as", self.times[0]

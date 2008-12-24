@@ -149,7 +149,7 @@ create view text_source as
     def fetchone(self, sql, default, *args):
         x = self.execute(sql, *args)
         g = x.fetchone()
-        if x is None:
+        if g is None:
             return default
         return g
 

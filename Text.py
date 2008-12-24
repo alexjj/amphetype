@@ -12,19 +12,19 @@ from itertools import *
 from PyQt4.QtCore import *
 
 abbreviations = set(map(unicode, [
-'jr', 'mr', 'mrs', 'ms', 'dr', 'prof', 'sr', "sen","rep","sens", "reps",'gov', "attys", "atty", 'supt', 
-'det', 'rev', 'col','gen', 'lt', 'cmdr', 'adm', 'capt', 'sgt', 'cpl', 'maj', 
-'dept', 'univ', 'assn', 'bros', 'inc', 'ltd', 'co', 'corp', 
+'jr', 'mr', 'mrs', 'ms', 'dr', 'prof', 'sr', "sen","rep","sens", "reps",'gov', "attys", "atty", 'supt',
+'det', 'rev', 'col','gen', 'lt', 'cmdr', 'adm', 'capt', 'sgt', 'cpl', 'maj',
+'dept', 'univ', 'assn', 'bros', 'inc', 'ltd', 'co', 'corp',
 'arc', 'al', 'ave', "blvd", "bld",'cl', 'ct', 'cres', 'dr', "expy", "exp", 'dist', 'mt', 'ft',
 "fwy", "fy",  "hway", "hwy",'la', "pde", "pd", 'pl', 'plz', 'rd', 'st', 'tce',
 'Ala' , 'Ariz', 'Ark', 'Cal', 'Calif', 'Col', 'Colo', 'Conn',
 'Del', 'Fed' , 'Fla', 'Ga', 'Ida', 'Id', 'Ill', 'Ind', 'Ia',
-'Kan', 'Kans', 'Ken', 'Ky' , 'La', 'Me', 'Md', 'Is', 'Mass', 
+'Kan', 'Kans', 'Ken', 'Ky' , 'La', 'Me', 'Md', 'Is', 'Mass',
 'Mich', 'Minn', 'Miss', 'Mo', 'Mont', 'Neb', 'Nebr' , 'Nev',
 'Mex', 'Okla', 'Ok', 'Ore', 'Penna', 'Penn', 'Pa'  , 'Dak',
 'Tenn', 'Tex', 'Ut', 'Vt', 'Va', 'Wash', 'Wis', 'Wisc', "Wy",
-'Wyo', 'USAFA', 'Alta' , 'Man', 'Ont', u'Qué', 'Sask', 'Yuk', 
-'jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec','sept', 
+'Wyo', 'USAFA', 'Alta' , 'Man', 'Ont', u'Qué', 'Sask', 'Yuk',
+'jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec','sept',
 'vs', 'etc', 'no', 'esp', 'eg', 'ie', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
 'avg', 'viz', 'm', 'mme']))
 
@@ -33,11 +33,11 @@ class SentenceSplitter(object):
 
     def __init__(self, text):
         self.string = text
-    
+
     def __iter__(self):
         p = [0]
         return ifilter(None, imap(lambda x: self.pars(p, x), self.sen.finditer(self.string)))
-    
+
     def pars(self, p, mat):
         if mat.group('pre') and self.isAbbreviation(mat.group('pre')):
             return None
@@ -50,14 +50,13 @@ class SentenceSplitter(object):
 
 
 class LessonMiner(QObject):
-    def __init__(self, fname, width=85, min_chars=220):
+    def __init__(self, fname):
         super(LessonMiner, self).__init__()
         #print time.clock()
         with codecs.open(fname, "r", "utf_8_sig") as f:
             self.paras = self.paras(f)
         self.lessons = None
-        self.min_chars = min_chars
-        self.width = width
+        self.min_chars = Settings.get('min_chars')
 
     def doIt(self):
         self.lessons = []
@@ -77,7 +76,7 @@ class LessonMiner(QObject):
             self.emit(SIGNAL("progress(int)"), int(100 * i/len(self.paras)))
         if backlen > 0:
             self.lessons.append(self.popFormat(backlog))
-    
+
     def popFormat(self, lst):
         #print lst
         ret = []
@@ -87,20 +86,17 @@ class LessonMiner(QObject):
             if s is not None:
                 p.append(s)
             else:
-                ret.append( #textwrap.fill(
-                                        u' '.join(p)) #, self.width))
+                ret.append(u' '.join(p))
                 p = []
         if len(p) > 0:
-            ret.append( #textwrap.fill(
-                                       u' '.join(p)) #, self.width))
-        #print ret
+            ret.append(u' '.join(p))
         return u'\n'.join(ret)
 
     def __iter__(self):
         if self.lessons is None:
             self.doIt()
         return iter(self.lessons)
-    
+
     def paras(self, f):
         p = []
         ps = []
@@ -122,7 +118,7 @@ def to_lessons(sentences):
     min_chars = Settings.get('min_chars')
     max_chars = Settings.get('max_chars')
     sweet_size = 3*(min_chars + max_chars) // 4
-    
+
     for s in sentences:
         ssplit = []
         while len(s) > sweet_size:
@@ -146,10 +142,10 @@ def to_lessons(sentences):
 
 
 class LessonGeneratorPlain(object):
-    def __init__(self, words, per_lesson=12, repeats=4, width=85):
+    def __init__(self, words, per_lesson=12, repeats=4):
         while (0 < len(words) % per_lesson < per_lesson / 2):
             per_lesson += 1
-        
+
         self.lessons = []
         wcopy = words[:]
         while wcopy:
