@@ -113,6 +113,7 @@ class PerformanceHistory(QWidget):
         self.connect(t, SIGNAL("doubleClicked(QModelIndex)"), self.doubleClicked)
         self.connect(Settings, SIGNAL('change_graph_what'), self.updateGraph)
         self.connect(Settings, SIGNAL('change_show_xaxis'), self.updateGraph)
+        self.connect(Settings, SIGNAL('change_chrono_x'), self.updateGraph)
 
         self.setLayout(AmphBoxLayout([
                 ["Show", SettingsEdit("perf_items"), "items for",
@@ -121,7 +122,8 @@ class PerformanceHistory(QWidget):
                     None, AmphButton("Update", self.updateData)],
                 (t, 1),
                 ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), (5, 'viscosity'))),
-                    SettingsCheckBox("show_xaxis", "Show X-axis"), None],
+                    SettingsCheckBox("show_xaxis", "Show X-axis"),
+                    SettingsCheckBox("chrono_x", "Use time-scaled X-axis"), None],
                 (self.plot, 1)
             ]))
 
@@ -132,9 +134,15 @@ class PerformanceHistory(QWidget):
     def updateGraph(self):
         pc = Settings.get('graph_what')
         y = map(lambda x:x[pc], self.model.rows)
-        y.reverse()
 
-        self.plot.setScene(Plotters.Plot(y))
+        if Settings.get("chrono_x"):
+            x = map(lambda x:x[1], self.model.rows)
+        else:
+            x = range(len(y))
+            x.reverse()
+
+        self.p = Plotters.Plot(x, y)
+        self.plot.setScene(self.p)
 
     def refreshSources(self):
         self.editflag = True

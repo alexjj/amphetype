@@ -46,7 +46,7 @@ class StringStats(QWidget):
         ob = SettingsCombo('ana_which', [
                     ('wpm asc', 'slowest'),
                     ('wpm desc', 'fastest'),
-                    ('viscosity asc', 'least fluid'),
+                    ('viscosity desc', 'least fluid'),
                     ('viscosity asc', 'most fluid'),
                     ('accuracy asc', 'least accurate'),
                     ('misses desc', 'most mistyped'),
