@@ -27,6 +27,7 @@ class AmphSettings(QSettings):
             "show_last": True,
             "show_xaxis": False,
             "chrono_x": False,
+            "dampen_graph": False,
             "quiz_right_fg": "#000000",
             "quiz_right_bg": "#ffffff",
             "quiz_wrong_fg": "#ffffff",

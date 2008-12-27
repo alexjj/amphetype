@@ -75,7 +75,7 @@ class Plot(QGraphicsScene):
 
             lbl = QGraphicsSimpleTextItem("%g" % start)
             th, tw = lbl.boundingRect().height(), lbl.boundingRect().width()
-            lbl.scale(0.03*w/tw, spc/th)
+            lbl.scale(0.026*w/tw, spc/th)
             lbl.setPos(QPointF(min_x - 0.03*w, -start-spc/2))
             self.addItem(lbl)
 

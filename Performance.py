@@ -14,43 +14,15 @@ import Widgets.Plotters as Plotters
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-#from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-#from matplotlib.figure import Figure
 
-
-
-def dampen(n, data):
-    last = []
-    for x in data:
-        last.append(x)
-        if len(last) == n:
-            yield (sum(last)/n)
-            last.pop(0)
-
-def with_halves(data):
-    p = None
-    for x in data:
-        if p is not None:
-            yield (x+p)/2
-        yield x
-
-
-def smooth(data):
-    smooth = [1, 6, 15, 20]
-    n = len(smooth)
-    total = sum(smooth)
-
-    res = [0] * n
-    for i in range(n):
-        res[i] = imap(lambda x:x*smooth[i], data)
-
-    last = []
-    for x in data:
-        last.append(x)
-        if len(last) == n:
-            yield sum(imap(operator.mul, last, smooth))/total
-        last.pop(0)
-
+def dampen(x, n=10):
+    ret = []
+    s = sum(x[0:n])
+    q = 1/n
+    for i in range(n, len(x)):
+        ret.append(s*q)
+        s += x[i] - x[i-n]
+    return ret
 
 
 class ResultModel(AmphModel):
@@ -114,6 +86,7 @@ class PerformanceHistory(QWidget):
         self.connect(Settings, SIGNAL('change_graph_what'), self.updateGraph)
         self.connect(Settings, SIGNAL('change_show_xaxis'), self.updateGraph)
         self.connect(Settings, SIGNAL('change_chrono_x'), self.updateGraph)
+        self.connect(Settings, SIGNAL("change_dampen_graph"), self.updateGraph)
 
         self.setLayout(AmphBoxLayout([
                 ["Show", SettingsEdit("perf_items"), "items for",
@@ -123,7 +96,8 @@ class PerformanceHistory(QWidget):
                 (t, 1),
                 ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), (5, 'viscosity'))),
                     SettingsCheckBox("show_xaxis", "Show X-axis"),
-                    SettingsCheckBox("chrono_x", "Use time-scaled X-axis"), None],
+                    SettingsCheckBox("chrono_x", "Use time-scaled X-axis"),
+                    SettingsCheckBox("dampen_graph", "Dampen graph values"), None],
                 (self.plot, 1)
             ]))
 
@@ -140,6 +114,10 @@ class PerformanceHistory(QWidget):
         else:
             x = range(len(y))
             x.reverse()
+
+        if Settings.get("dampen_graph"):
+            y = dampen(y)
+            x = dampen(x)
 
         self.p = Plotters.Plot(x, y)
         self.plot.setScene(self.p)
