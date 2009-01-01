@@ -3,13 +3,13 @@
 from __future__ import division, with_statement
 
 
+
 from itertools import *
 import time
 import bisect
-import getpass
 import sqlite3
 import re
-
+from Config import Settings
 
 
 def trimmed_average(total, series):
@@ -80,6 +80,18 @@ class MedianAggregate(Statistic):
     def finalize(self):
         return self.median()
 
+class MeanAggregate(object):
+    def __init__(self):
+        self.sum_ = 0.0
+        self.count_ = 0
+
+    def step(self, value, count):
+        self.sum_ += value * count
+        self.count_ += count
+
+    def finalize(self):
+        return self.sum_ / self.count_
+
 class FirstAggregate(object):
     def __init__(self):
         self.val = None
@@ -102,6 +114,7 @@ class AmphDatabase(sqlite3.Connection):
         self.create_function("regex_match", 1, self.match)
         self.create_function("abbreviate", 2, self.abbreviate)
         self.create_aggregate("agg_median", 1, MedianAggregate)
+        self.create_aggregate("agg_mean", 2, MeanAggregate)
         self.create_aggregate("agg_first", 1, FirstAggregate)
         #self.create_aggregate("agg_trimavg", 2, TrimmedAverarge)
         self.create_function("ifelse", 3, lambda x, y, z: y if x is not None else z)
@@ -159,21 +172,33 @@ create view text_source as
             return default
         return g
 
-    def getSource(self, source, lesson=False):
+    def getSource(self, source, lesson=None):
         v = self.fetchall('select rowid from source where name = ? limit 1', (source, ))
         if len(v) > 0:
             self.execute('update source set disabled = NULL where rowid = ?', v[0])
             self.commit()
             return v[0][0]
-        self.execute('insert into source (name,discount) values (?,?)', (source, 1 if lesson else None))
+        self.execute('insert into source (name,discount) values (?,?)', (source, lesson))
         return self.getSource(source)
 
-dbname = getpass.getuser() or "typer"
-if '.' not in dbname:
-    dbname += '.db'
 
-# Global entries
+
+dbname = Settings.get("db_name")
+
+# GLOBAL
 DB = sqlite3.connect(dbname,5,0,"DEFERRED",False,AmphDatabase)
+
+def switchdb(nn):
+    global DB
+    DB.commit()
+    try:
+        nDB = sqlite3.connect(nn,5,0,"DEFERRED",False,AmphDatabase)
+        DB = nDB
+    except Exception, e:
+        from PyQt4.QtGui import QMessageBox as qmb
+        qmb.information(None, "Database Error", "Failed to switch to the new database:\n" + str(e))
+
+
 
 
 #Item = ItemStatistics()

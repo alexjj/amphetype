@@ -89,9 +89,12 @@ A typing program that not only measures your speed and progress, but also gives 
                         "(in order works by selecting the next text after the one you completed last, in the order they were added to the database, easy/difficult works by estimating your WPM for several random texts and choosing the fastest/slowest)\n",
                         20,
                         AmphGridLayout([
-                            [("Repeat lessons that don't meet the following requirements:\n", (1, 3))],
+                            [("Repeat <i>texts</i> that don't meet the following requirements:\n", (1, 3))],
                             ["WPM:", SettingsEdit("min_wpm")],
-                            ["Accuracy:", SettingsEdit("min_acc"), (None, (0, 1))]
+                            ["Accuracy:", SettingsEdit("min_acc"), (None, (0, 1))],
+                            [("Repeat <i>lessons</i> that don't meet the followint requirements:\n", (1, 3))],
+                            ["WPM:", SettingsEdit("min_lesson_wpm")],
+                            ["Accuracy:", SettingsEdit("min_lesson_acc")],
                         ]),
                         None
                     ]
@@ -157,30 +160,41 @@ A typing program that not only measures your speed and progress, but also gives 
             fname = path.basename(x)
             lm = LessonMiner(x)
             self.connect(lm, SIGNAL("progress(int)"), self.progress.setValue)
-            self.addTexts(fname, lm)
+            self.addTexts(fname, lm, update=False)
 
         self.progress.hide()
+        self.update()
         DB.commit()
 
-    def addTexts(self, source, texts, lesson=False):
+    def addTexts(self, source, texts, lesson=None, update=True):
         id = DB.getSource(source, lesson)
         r = []
         for x in texts:
             h = hashlib.sha1()
             h.update(x.encode('utf-8'))
+            txt_id = h.hexdigest()
             try:
                 DB.execute("insert into text (id,text,source) values (?,?,?)",
-                           (h.hexdigest(), x, id))
+                           (txt_id, x, id))
+                r.append(txt_id)
             except Exception, e:
                 pass # silently skip ...
-        self.emit(SIGNAL("refreshSources"))
-        self.update()
-
+        if update:
+            self.update()
         if lesson:
             DB.commit()
+        return r
 
+    def newReview(self, review):
+        q = self.addTexts("<Reviews>", [review], lesson=2, update=False)
+        if q:
+            v = DB.fetchone("select id,source,text from text where id = ?", self.defaultText, q)
+            self.emit(SIGNAL("setText"), v)
+        else:
+            self.nextText()
 
     def update(self):
+        self.emit(SIGNAL("refreshSources"))
         self.model.reset()
 
     def nextText(self):
@@ -201,7 +215,9 @@ A typing program that not only measures your speed and progress, but also gives 
         else:
             # Fetch in order
             lastid = (0,)
-            g = DB.fetchone("select text_id from result order by w desc limit 1", None)
+            g = DB.fetchone("""select r.text_id
+                from result as r left join source as s on (r.source = s.rowid)
+                where (s.discount is null) or (s.discount = 1) order by r.w desc limit 1""", None)
             if g is not None:
                 lastid = DB.fetchone("select rowid from text where id = ?", lastid, g)
             v = DB.fetchone("select id,source,text from text where rowid > ? and disabled is null order by rowid asc limit 1", None, lastid)

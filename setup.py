@@ -13,7 +13,7 @@ setup(
             #"dll_excludes":['libgdk-win32-2.0-0.dll','libgobject-2.0-0.dll', "libgdk_pixbuf-2.0-0.dll"],
             "dist_dir": "Amphetype"}},
         data_files=[('txt', glob.glob('txt/*.txt')),
-            ('', ['about.html']),
+            ('', ['about.html', "gpl.txt"]),
             ('txt/wordlists', glob.glob('txt/wordlists/*.txt'))]
     )
 

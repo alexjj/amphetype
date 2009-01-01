@@ -5,14 +5,19 @@ import cPickle
 from QtUtil import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+import getpass
 
+try:
+    _dbname = getpass.getuser() or "typer"
+    if '.' not in _dbname:
+        _dbname += '.db'
+except:
+    _dbname = "typer.db"
 
 class AmphSettings(QSettings):
 
     defaults = {
             "typer_font": str(QFont("Arial", 14).toString()),
-            "min_wpm": 40.0,
-            "min_acc": 80.0,
             "history": 30.0,
             "min_chars": 220,
             "max_chars": 600,
@@ -20,6 +25,7 @@ class AmphSettings(QSettings):
             "perf_group_by": 0,
             "perf_items": 100,
             "text_regex": r"",
+            "db_name": _dbname,
             "select_method": 0,
             "num_rand": 50,
             "graph_what": 3,
@@ -28,10 +34,23 @@ class AmphSettings(QSettings):
             "show_xaxis": False,
             "chrono_x": False,
             "dampen_graph": False,
+
+            "use_lesson_stats": False,
+            "auto_review": False,
+
+            "min_wpm": 0.0,
+            "min_acc": 0.0,
+            "min_lesson_wpm": 0.0,
+            "min_lesson_acc": 97.0,
+
             "quiz_right_fg": "#000000",
             "quiz_right_bg": "#ffffff",
             "quiz_wrong_fg": "#ffffff",
             "quiz_wrong_bg": "#000000",
+
+            "group_month": 365.0,
+            "group_week": 30.0,
+            "group_day": 7.0,
 
             "ana_which": "wpm asc",
             "ana_what": 0,
@@ -165,7 +184,11 @@ class PreferenceWidget(QWidget):
                 SettingsEdit('num_rand'), "texts.", None],
             [SettingsCheckBox('req_space', "Make SPACE mandatory before each session."),
                 ("(Unchecking this and not starting texts by pressing space will reduce the accuracy (very slightly) of the measurements for the first key, word, and trigram of every text.)\n", 1)],
-            [SettingsCheckBox('show_last', "Show last result(s) above text in the Typer.")],
+            SettingsCheckBox('show_last', "Show last result(s) above text in the Typer."),
+            SettingsCheckBox('use_lesson_stats', "Save key/trigram/word statistics from generated lessons."),
+            [SettingsCheckBox('auto_review', "Automatically review slow and mistyped words after texts."),
+                ("(Amphetype will use the lesson generation settings you have set on the Lesson Generator tab.)\n", 1)],
+            None,
             [AmphGridLayout([
                 ["Typer Colors", "Text Color", "Background"],
                 ["Correct Input", SettingsColor('quiz_right_fg', "Foreground"),

@@ -103,7 +103,7 @@ class LessonGenerator(QWidget):
 
         self.setLayout(AmphBoxLayout([
             ["Welcome to Amphetype's automatic lesson generator!"],
-            [" You can retrieve a list of words/keys/trigrams to practice from the Analysis tab, import from an external file, or even type in your own (separated by space).\n"""],
+            ["You can retrieve a list of words/keys/trigrams to practice from the Analysis tab, import from an external file, or even type in your own (separated by space).\n"""],
             10,
             ["In generating lessons, I will make", SettingsEdit("gen_copies"),
                 "copies the list below and divide them into sublists of size",
@@ -132,8 +132,19 @@ class LessonGenerator(QWidget):
         self.connect(Settings, SIGNAL("change_gen_mix"), self.generatePreview)
         self.connect(self.strings, SIGNAL("updated"), self.generatePreview)
 
+
+    def wantReview(self, words):
+        sentences = self.generateLesson(words)
+        self.emit(SIGNAL("newReview"), u' '.join(sentences))
+
     def generatePreview(self):
         words = self.strings.getList()
+        sentences = self.generateLesson(words)
+        self.sample.clear()
+        for x in Text.to_lessons(sentences):
+            self.sample.append(x + "\n\n")
+
+    def generateLesson(self, words):
         copies = Settings.get('gen_copies')
         take = Settings.get('gen_take')
         mix = Settings.get('gen_mix')
@@ -146,15 +157,11 @@ class LessonGenerator(QWidget):
             if mix == 'm': # mingle
                 random.shuffle(sen)
             sentences.append(u' '.join(sen))
+        return sentences
 
-        self.sample.clear()
-        for x in Text.to_lessons(sentences):
-            self.sample.append(x + "\n\n")
-
-    def acceptLessons(self):
-
+    def acceptLessons(self, name=None):
         name = unicode(self.les_name.text())
-        if not name:
+        if len(name.strip()) == 0:
             name = "<Lesson %s>" % time.strftime("%y-%m-%d %H:%M")
 
         lessons = filter(None, [x.strip() for x in unicode(self.sample.toPlainText()).split("\n\n")])
@@ -163,7 +170,7 @@ class LessonGenerator(QWidget):
             QMessageBox.information(self, "No Lessons", "Generate some lessons before you try to add them!")
             return
 
-        self.emit(SIGNAL("newLessons"), name, lessons, True)
+        self.emit(SIGNAL("newLessons"), name, lessons, 1)
 
     def addStrings(self, *args):
         self.strings.addList(*args)
