@@ -197,7 +197,7 @@ class Quizzer(QWidget):
                    (now, self.text[0], self.text[1], 12.0/spc, accuracy, viscosity))
 
         v2 = DB.fetchone("""select agg_median(wpm),agg_median(acc) from
-            (select wpm,100.0*accuracy as acc from result order by w desc limit 10)""", (0.0, 100.0))
+            (select wpm,100.0*accuracy as acc from result order by w desc limit %d)""" % Settings.get('def_group_by'), (0.0, 100.0))
         self.result.setText("Last: %.1fwpm (%.1f%%), last 10 average: %.1fwpm (%.1f%%)"
             % ((12.0/spc, 100.0*accuracy) + v2))
 

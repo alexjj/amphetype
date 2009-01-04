@@ -89,9 +89,11 @@ class PerformanceHistory(QWidget):
         self.connect(Settings, SIGNAL("change_dampen_graph"), self.updateGraph)
 
         self.setLayout(AmphBoxLayout([
-                ["Show", SettingsEdit("perf_items"), "items for",
-                    SettingsCombo('lesson_stats', ["both", "texts", "lessons"]), "limited to", self.cb_source,
-                    "and group by", SettingsCombo('perf_group_by', ["single sessions", "10 sessions", "days"]),
+                ["Show", SettingsEdit("perf_items"), "items from",
+                    #SettingsCombo('lesson_stats', ["both", "texts", "lessons"]), "limited to",
+                    self.cb_source,
+                    "and group by", SettingsCombo('perf_group_by',
+                        ["<no grouping>", "%d sessions" % Settings.get('def_group_by'), "sitting", "day"]),
                     None, AmphButton("Update", self.updateData)],
                 (t, 1),
                 ["Plot", SettingsCombo('graph_what', ((3, 'WPM'), (4, 'accuracy'), (5, 'viscosity'))),
@@ -116,8 +118,8 @@ class PerformanceHistory(QWidget):
             x.reverse()
 
         if Settings.get("dampen_graph"):
-            y = dampen(y)
-            x = dampen(x)
+            y = dampen(y, Settings.get('dampen_average'))
+            x = dampen(x, Settings.get('dampen_average'))
 
         self.p = Plotters.Plot(x, y)
         self.plot.setScene(self.p)
@@ -127,6 +129,8 @@ class PerformanceHistory(QWidget):
         self.cb_source.clear()
         self.cb_source.addItem("<ALL>")
         self.cb_source.addItem("<LAST TEXT>")
+        self.cb_source.addItem("<ALL TEXTS>")
+        self.cb_source.addItem("<ALL LESSONS>")
 
         for id, v in DB.fetchall('select rowid,abbreviate(name,30) from source order by name'):
             self.cb_source.addItem(v, QVariant(id))
@@ -138,19 +142,15 @@ class PerformanceHistory(QWidget):
         where = []
         if self.cb_source.currentIndex() <= 0:
             pass
-        elif self.cb_source.currentIndex() == 1:
+        elif self.cb_source.currentIndex() == 1: # last text
             where.append('r.text_id = (select text_id from result order by w desc limit 1)')
+        elif self.cb_source.currentIndex() == 2: # all texts
+            where.append('s.discount is null')
+        elif self.cb_source.currentIndex() == 3: # all lessons texts
+            where.append('s.discount is not null')
         else:
             s = self.cb_source.itemData(self.cb_source.currentIndex())
             where.append('r.source = %d' % s.toInt()[0])
-
-        s = Settings.get('lesson_stats')
-        if s == 0:
-            pass
-        elif s == 1: # texts
-            where.append('s.discount is null')
-        else: # s == 2: # lessons
-            where.append('s.discount is not null')
 
         if len(where) > 0:
             where = 'where ' + ' and '.join(where)
@@ -159,23 +159,29 @@ class PerformanceHistory(QWidget):
 
         g = Settings.get('perf_group_by')
         if g == 0: # no grouping
-            sql = '''select text_id,w,s.name,wpm,100.0*accuracy,viscosity from result as r
-                left join source as s on (r.source = s.rowid)
+            sql = '''select text_id,w,s.name,wpm,100.0*accuracy,viscosity
+                from result as r left join source as s on (r.source = s.rowid)
                 %s %s
                 order by w desc limit %d'''
-        else:
-            sql = '''select agg_first(text_id),avg(r.w) as w,count(distinct r.source) || ' source(s)',agg_median(r.wpm),
+        elif g:
+            sql = '''select agg_first(text_id),avg(r.w) as w,count(r.rowid) || ' result(s)',agg_median(r.wpm),
                         100.0*agg_median(r.accuracy),agg_median(r.viscosity)
-                from result as r
-                left join source as s on (r.source = s.rowid)
+                from result as r left join source as s on (r.source = s.rowid)
                 %s %s
                 order by w desc limit %d'''
 
         group = ''
-        if g == 1: # by 10
+        if g == 1: # by Settings.get('def_group_by')
             DB.resetCounter()
-            group = "group by cast(counter()/10 as int)"
-        elif g == 2: # by days
+            gn = Settings.get('def_group_by')
+            if gn <= 1:
+                gn = 1
+            group = "group by cast(counter()/%d as int)" % gn
+        elif g == 2: # by sitting
+            mis = Settings.get('minutes_in_sitting') * 60.0
+            DB.resetTimeGroup()
+            group = "group by time_group(%f, r.w)" % mis
+        elif g == 3: # by day
             group = "group by cast((r.w+4*3600)/86400 as int)"
 
         n = Settings.get("perf_items")

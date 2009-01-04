@@ -110,9 +110,11 @@ class AmphDatabase(sqlite3.Connection):
 
         self.setRegex("")
         self.resetCounter()
+        self.resetTimeGroup()
         self.create_function("counter", 0, self.counter)
         self.create_function("regex_match", 1, self.match)
         self.create_function("abbreviate", 2, self.abbreviate)
+        self.create_function("time_group", 2, self.time_group)
         self.create_aggregate("agg_median", 1, MedianAggregate)
         self.create_aggregate("agg_mean", 2, MeanAggregate)
         self.create_aggregate("agg_first", 1, FirstAggregate)
@@ -123,6 +125,16 @@ class AmphDatabase(sqlite3.Connection):
             self.fetchall("select * from result,source,statistic,text,mistake limit 1")
         except:
             self.newDB()
+
+    def resetTimeGroup(self):
+        self.lasttime_ = 0.0
+        self.timecnt_ = 0
+
+    def time_group(self, d, x):
+        if abs(x-self.lasttime_) >= d:
+            self.timecnt_ += 1
+        self.lasttime_ = x
+        return self.timecnt_
 
     def setRegex(self, x):
         self.regex_ = re.compile(x)

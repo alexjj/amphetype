@@ -21,7 +21,7 @@ class AmphSettings(QSettings):
             "history": 30.0,
             "min_chars": 220,
             "max_chars": 600,
-            "lesson_stats": 0,
+            "lesson_stats": 0, # show text/lesson in perf -- not used anymore
             "perf_group_by": 0,
             "perf_items": 100,
             "text_regex": r"",
@@ -34,6 +34,10 @@ class AmphSettings(QSettings):
             "show_xaxis": False,
             "chrono_x": False,
             "dampen_graph": False,
+
+            "minutes_in_sitting": 60.0,
+            "dampen_average": 10,
+            "def_group_by": 10,
 
             "use_lesson_stats": False,
             "auto_review": False,
@@ -176,28 +180,32 @@ class PreferenceWidget(QWidget):
 
         self.setLayout(AmphBoxLayout([
             ["Typer font is", self.font_lbl, AmphButton("Change...", self.setFont), None],
-            ["Data is considered too old to be included in analysis after",
-                SettingsEdit("history"), "days.", None],
-            ["Try to limit texts and lessons to between", SettingsEdit("min_chars"),
-                "and", SettingsEdit("max_chars"), "characters.", None],
-            ["When selecting easy/difficult texts, scan a sample of",
-                SettingsEdit('num_rand'), "texts.", None],
-            [SettingsCheckBox('req_space', "Make SPACE mandatory before each session."),
-                ("(Unchecking this and not starting texts by pressing space will reduce the accuracy (very slightly) of the measurements for the first key, word, and trigram of every text.)\n", 1)],
+            [SettingsCheckBox('auto_review', "Automatically review slow and mistyped words after texts."),
+                ('<a href="http://code.google.com/p/amphetype/wiki/Settings">(help)</a>\n', 1)],
             SettingsCheckBox('show_last', "Show last result(s) above text in the Typer."),
             SettingsCheckBox('use_lesson_stats', "Save key/trigram/word statistics from generated lessons."),
-            [SettingsCheckBox('auto_review', "Automatically review slow and mistyped words after texts."),
-                ("(Amphetype will use the lesson generation settings you have set on the Lesson Generator tab.)\n", 1)],
+            [SettingsCheckBox('req_space', "Make SPACE mandatory before each session"),
+                ('<a href="http://code.google.com/p/amphetype/wiki/Settings">(help)</a>\n', 1)],
             None,
             [AmphGridLayout([
-                ["Typer Colors", "Text Color", "Background"],
+                ["INPUT COLORS", "Text Color", "Background"],
                 ["Correct Input", SettingsColor('quiz_right_fg', "Foreground"),
                         SettingsColor('quiz_right_bg', "Background")],
                 ["Wrong Input", SettingsColor('quiz_wrong_fg', "Foreground"),
                         SettingsColor('quiz_wrong_bg', "Background")],
                 [1+1j,1+2j,2+1j,2+2j]
             ]), None],
-            None
+            None,
+            ["Data is considered too old to be included in analysis after",
+                SettingsEdit("history"), "days.", None],
+            ["Try to limit texts and lessons to between", SettingsEdit("min_chars"),
+                "and", SettingsEdit("max_chars"), "characters.", None],
+            ["When selecting easy/difficult texts, scan a sample of",
+                SettingsEdit('num_rand'), "texts.", None],
+            ["When grouping by sitting on the Performance tab, consider results more than",
+                SettingsEdit('minutes_in_sitting'), "minutes away to be part of a different sitting.", None],
+            ["Group by", SettingsEdit('def_group_by'), "results when displaying last scores and showing last results on the Typer tab.", None],
+            ["When smoothing out the graph, display a running average of", SettingsEdit('dampen_average'), "values", None]
         ]))
 
         self.updateFont()

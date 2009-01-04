@@ -92,7 +92,7 @@ A typing program that not only measures your speed and progress, but also gives 
                             [("Repeat <i>texts</i> that don't meet the following requirements:\n", (1, 3))],
                             ["WPM:", SettingsEdit("min_wpm")],
                             ["Accuracy:", SettingsEdit("min_acc"), (None, (0, 1))],
-                            [("Repeat <i>lessons</i> that don't meet the followint requirements:\n", (1, 3))],
+                            [("Repeat <i>lessons</i> that don't meet the following requirements:\n", (1, 3))],
                             ["WPM:", SettingsEdit("min_lesson_wpm")],
                             ["Accuracy:", SettingsEdit("min_lesson_acc")],
                         ]),

@@ -10,6 +10,7 @@ class WWLabel(QLabel):
     def __init__(self, *args):
         super(QLabel, self).__init__(*args)
         self.setWordWrap(True)
+        self.setOpenExternalLinks(True)
 
 
 class AmphModel(QAbstractItemModel):
