@@ -157,7 +157,7 @@ class Quizzer(QWidget):
         #self.info = QLabel()
         self.connect(self.typer,  SIGNAL("done"), self.done)
         self.connect(self.typer,  SIGNAL("cancel"), SIGNAL("wantText"))
-        self.connect(Settings, SIGNAL("change_typer_font"), lambda x: self.readjust)
+        self.connect(Settings, SIGNAL("change_typer_font"), self.readjust)
         self.connect(Settings, SIGNAL("change_show_last"), self.result.setVisible)
 
         self.text = ('','', 0, None)
@@ -172,8 +172,7 @@ class Quizzer(QWidget):
         self.readjust()
 
     def readjust(self):
-        f = QFont()
-        f.fromString(Settings.get("typer_font"))
+        f = Settings.getFont("typer_font")
         self.label.setFont(f)
         self.typer.setFont(f)
 

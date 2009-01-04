@@ -173,9 +173,10 @@ A typing program that not only measures your speed and progress, but also gives 
             h = hashlib.sha1()
             h.update(x.encode('utf-8'))
             txt_id = h.hexdigest()
+            dis = 1 if lesson == 2 else None
             try:
-                DB.execute("insert into text (id,text,source) values (?,?,?)",
-                           (txt_id, x, id))
+                DB.execute("insert into text (id,text,source,disabled) values (?,?,?,?)",
+                           (txt_id, x, id, dis))
                 r.append(txt_id)
             except Exception, e:
                 pass # silently skip ...
